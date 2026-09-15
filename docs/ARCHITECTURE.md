@@ -1,45 +1,44 @@
 # Architecture
 
-## Phase 4 boundary
+## Current boundary
 
-JobFit currently consists of two intentionally simple applications:
+JobFit consists of two applications:
 
-- `web/`: a Next.js App Router frontend using TypeScript and Tailwind CSS.
-- `api/`: a FastAPI backend with typed health, semantic comparison, and
-  JobFit analysis endpoints.
+- `web/`: Next.js App Router frontend using TypeScript and Tailwind CSS.
+- `api/`: FastAPI backend containing authentication, persistence, billing,
+  PDF extraction, analysis, and the Sentence Transformers embedding service.
 
-The analyzer is a client component that calls FastAPI's `/analyze` endpoint
-using `NEXT_PUBLIC_BACKEND_URL`. FastAPI allows the local frontend origins
-through a narrow CORS configuration. The frontend does not duplicate
-extraction, embedding, threshold, or scoring logic.
+PostgreSQL is the production database. SQLAlchemy models are managed through
+Alembic migrations. SQLite is used only as a lightweight development/test
+fallback when `DATABASE_URL` is not supplied. User-owned rows contain a
+`user_id` foreign key and every repository query includes that owner scope.
 
-The backend keeps semantic ML inference inside the FastAPI process. The
-embedding service lazily loads `sentence-transformers/all-MiniLM-L6-v2` once
-through a process-local cached dependency, then reuses that model for later
-requests. There is no database, authentication, queue, or separate ML
-service.
+## Authentication and privacy
 
-## Semantic comparison API
+The API uses Argon2 password hashing and signed, HttpOnly JWT session cookies.
+The browser never receives a password hash or payment secret. Resume uploads
+are validated as PDFs, size-limited, parsed server-side, and their extracted
+text is stored only in the owner's database rows. Uploaded PDF bytes and
+embeddings are not persisted.
 
-`POST /compare` accepts two non-empty text strings and returns a cosine
-similarity score and the model identifier. The endpoint does not classify
-results or apply product thresholds.
+## Analysis
 
-## JobFit analysis API
+`POST /analyses` loads an owner's resume and job, enforces usage entitlement,
+then reuses the Phase 2 cached Sentence Transformers service and Phase 3
+analysis engine. Results persist model/scoring metadata and requirement-level
+evidence. Analysis routes never accept IDs without checking the authenticated
+owner.
 
-`POST /analyze` accepts plain-text `resume_text` and `job_description`.
-The backend deterministically extracts requirements, segments the resume into
-evidence units, compares every requirement with every evidence unit using the
-cached embedding service, and returns the strongest evidence and
-classification for each requirement.
+## Billing
 
-The frontend presents the resulting score and explanations but does not
-calculate them.
+Stripe Checkout creates Pro subscriptions. Stripe-signed webhooks update the
+server-side subscription and plan state. Analysis limits are enforced from
+database state, never from frontend state. Webhook event IDs are unique for
+idempotent processing.
 
-## Local runtime
+## Production operation
 
-Run the API on port 8000 and the web application on port 3000. The default
-backend URL is `http://127.0.0.1:8000`; deployments can override it with
-`BACKEND_URL` and `NEXT_PUBLIC_BACKEND_URL`. The first semantic comparison or
-analysis downloads the configured model from Hugging Face if it is not already
-cached locally.
+The frontend and backend are deployed as separate services with managed
+PostgreSQL. `/health` checks process availability and `/ready` checks database
+availability. CI runs backend tests/migrations and frontend lint, typecheck,
+and build. See [`RUNBOOK.md`](RUNBOOK.md) for deployment and recovery steps.

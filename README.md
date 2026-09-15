@@ -65,15 +65,17 @@ updated to reflect the repository as it actually exists.
 
 ## Development
 
-Phase 4 provides a Next.js frontend and FastAPI backend with semantic
-comparison and a plain-text JobFit analyzer. Use two terminals
+The current application provides a Next.js frontend and FastAPI backend with
+private workspaces, PDF resume ingestion, saved jobs/analyses, semantic
+analysis, and Stripe billing hooks. Use two terminals
 from the repository root:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r api/requirements.txt
-uvicorn app.main:app --app-dir api --reload
+python3 -m alembic --config api/alembic.ini upgrade head
+python3 -m uvicorn app.main:app --app-dir api --reload
 ```
 
 ```bash
@@ -82,9 +84,8 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:3000>. The frontend reads `BACKEND_URL` from the
-environment and displays the backend health status. Copy `.env.example` to
-`.env.local` if the backend is running at a different URL.
+Open <http://localhost:3000>. Copy `.env.example` to `web/.env.local` and
+configure `NEXT_PUBLIC_BACKEND_URL` if the API is running at a different URL.
 
 Run backend tests with `pytest api`, and run frontend checks with:
 
@@ -100,12 +101,10 @@ The first request to `POST /compare` or `POST /analyze` downloads
 already cached. The backend keeps the model loaded for reuse within the
 process.
 
-The analyzer is available at <http://localhost:3000>. It sends resume and job
-description text to `POST /analyze`, displays requirement-level evidence, and
-does not save inputs. Copy `.env.example` to `web/.env.local` if the backend
-is running at a different URL, setting `NEXT_PUBLIC_BACKEND_URL` for browser
-requests. The API can also use `FRONTEND_ORIGIN` when accessed from a
-different local frontend origin.
+Create an account, upload a PDF resume, save a job description, and run an
+analysis from the private workspace. The free plan allows five analyses per
+UTC month. Stripe checkout is available when the Stripe variables in
+`.env.example` are configured.
 
 Example comparison request:
 
@@ -115,17 +114,19 @@ curl -X POST http://127.0.0.1:8000/compare \
   -d '{"text_a":"Developed REST APIs","text_b":"Built backend web services"}'
 ```
 
-Example analysis request:
+Analysis thresholds, persistence, authentication, billing, privacy, and
+deployment are documented in [`docs/DECISIONS.md`](docs/DECISIONS.md),
+[`docs/PRIVACY.md`](docs/PRIVACY.md), and [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
+
+Run migrations with `cd api && python3 -m alembic upgrade head`. Run backend
+tests with `python3 -m pytest api`. Frontend checks remain:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/analyze \
-  -H 'Content-Type: application/json' \
-  -d '{"resume_text":"Built REST APIs with Python.","job_description":"- Experience developing REST APIs."}'
+cd web
+npm run lint
+npm run typecheck
+npm run build
 ```
-
-Analysis thresholds and methodology are documented in
-[`docs/DECISIONS.md`](docs/DECISIONS.md). Phase 3/4 intentionally do not
-include persistence, accounts, uploads, payments, or hiring predictions.
 
 ## Principles
 

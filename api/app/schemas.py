@@ -55,3 +55,62 @@ class AnalysisResponse(BaseModel):
     requirements: list[RequirementResult]
     model: str
     scoring: ScoringConfiguration
+
+
+class AuthRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        return value.lower().strip()
+
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+
+
+class JobCreateRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    company: Optional[str] = Field(default=None, max_length=200)
+    description: str = Field(min_length=1, max_length=100_000)
+    url: Optional[str] = Field(default=None, max_length=2048)
+
+
+class JobResponse(JobCreateRequest):
+    id: str
+    created_at: str
+
+
+class ResumeResponse(BaseModel):
+    id: str
+    name: str
+    created_at: str
+
+
+class AnalysisSummaryResponse(BaseModel):
+    id: str
+    resume_id: str
+    job_id: str
+    overall_compatibility: float
+    model: str
+    scoring: ScoringConfiguration
+    created_at: str
+
+
+class AnalysisCreateRequest(BaseModel):
+    resume_id: str = Field(min_length=1)
+    job_id: str = Field(min_length=1)
+
+
+class BillingResponse(BaseModel):
+    plan: str
+    status: str
+    analyses_used: int
+    analyses_limit: Optional[int]
+
+
+class CheckoutResponse(BaseModel):
+    url: str
