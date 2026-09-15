@@ -65,8 +65,8 @@ updated to reflect the repository as it actually exists.
 
 ## Development
 
-Phase 2 provides a Next.js frontend and FastAPI backend with semantic text
-comparison. Use two terminals
+Phase 4 provides a Next.js frontend and FastAPI backend with semantic
+comparison and a plain-text JobFit analyzer. Use two terminals
 from the repository root:
 
 ```bash
@@ -95,10 +95,17 @@ npm run typecheck
 npm run build
 ```
 
-The first request to `POST /compare` downloads
+The first request to `POST /compare` or `POST /analyze` downloads
 `sentence-transformers/all-MiniLM-L6-v2` from Hugging Face if it is not
 already cached. The backend keeps the model loaded for reuse within the
 process.
+
+The analyzer is available at <http://localhost:3000>. It sends resume and job
+description text to `POST /analyze`, displays requirement-level evidence, and
+does not save inputs. Copy `.env.example` to `web/.env.local` if the backend
+is running at a different URL, setting `NEXT_PUBLIC_BACKEND_URL` for browser
+requests. The API can also use `FRONTEND_ORIGIN` when accessed from a
+different local frontend origin.
 
 Example comparison request:
 
@@ -107,6 +114,18 @@ curl -X POST http://127.0.0.1:8000/compare \
   -H 'Content-Type: application/json' \
   -d '{"text_a":"Developed REST APIs","text_b":"Built backend web services"}'
 ```
+
+Example analysis request:
+
+```bash
+curl -X POST http://127.0.0.1:8000/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"resume_text":"Built REST APIs with Python.","job_description":"- Experience developing REST APIs."}'
+```
+
+Analysis thresholds and methodology are documented in
+[`docs/DECISIONS.md`](docs/DECISIONS.md). Phase 3/4 intentionally do not
+include persistence, accounts, uploads, payments, or hiring predictions.
 
 ## Principles
 
