@@ -65,8 +65,34 @@ updated to reflect the repository as it actually exists.
 
 ## Development
 
-Local development instructions will be added during Phase 1 once the
-frontend and backend foundations exist.
+Phase 1 provides a Next.js frontend and FastAPI backend. Use two terminals
+from the repository root:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r api/requirements.txt
+uvicorn app.main:app --app-dir api --reload
+```
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open <http://localhost:3000>. The frontend reads `BACKEND_URL` from the
+environment and displays the backend health status. Copy `.env.example` to
+`.env.local` if the backend is running at a different URL.
+
+Run backend tests with `pytest api`, and run frontend checks with:
+
+```bash
+cd web
+npm run lint
+npm run typecheck
+npm run build
+```
 
 ## Principles
 
