@@ -65,7 +65,8 @@ updated to reflect the repository as it actually exists.
 
 ## Development
 
-Phase 1 provides a Next.js frontend and FastAPI backend. Use two terminals
+Phase 2 provides a Next.js frontend and FastAPI backend with semantic text
+comparison. Use two terminals
 from the repository root:
 
 ```bash
@@ -92,6 +93,19 @@ cd web
 npm run lint
 npm run typecheck
 npm run build
+```
+
+The first request to `POST /compare` downloads
+`sentence-transformers/all-MiniLM-L6-v2` from Hugging Face if it is not
+already cached. The backend keeps the model loaded for reuse within the
+process.
+
+Example comparison request:
+
+```bash
+curl -X POST http://127.0.0.1:8000/compare \
+  -H 'Content-Type: application/json' \
+  -d '{"text_a":"Developed REST APIs","text_b":"Built backend web services"}'
 ```
 
 ## Principles
